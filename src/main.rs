@@ -190,7 +190,7 @@ impl Map {
             self.anon_huge_pages, self.shmem_pmd_mapped, self.file_pmd_mapped
         );
         println!(
-            "Shared huge tlb: {}, private huge tlb: {}, swap: {}, swap_pss: {}, locked: {}",
+            "Shared huge tlb: {}, private huge tlb: {}, swap: {}, swap pss: {}, locked: {}",
             self.shared_huge_tlb, self.private_huge_tlb, self.swap, self.swap_pss, self.locked
         );
         println!(
@@ -270,27 +270,29 @@ impl Maps {
                 }
                 j += 1;
             } else {
-                // Same map, see if there was a diff:
-                let enddiff = if m.end != p.end {
-                    format!(" (was {})", p.end)
-                } else {
-                    "".to_string()
-                };
-                let sizediff = if m.size != p.size {
-                    format!(" (was {})", p.size)
-                } else {
-                    "".to_string()
-                };
-                let rssdiff = if m.rss != p.rss {
-                    format!(" (was {})", p.rss)
-                } else {
-                    "".to_string()
-                };
-                if !enddiff.is_empty() || !sizediff.is_empty() || !rssdiff.is_empty() {
-                    println!(
-                        "CHANGED: {:x}-{:x}{} size={}{} rss={}{} {}",
-                        m.start, m.end, enddiff, m.size, sizediff, m.rss, rssdiff, m.name
-                    );
+                if !m.name.is_empty() {
+                    // Same map, see if there was a diff:
+                    let enddiff = if m.end != p.end {
+                        format!(" (was {})", p.end)
+                    } else {
+                        "".to_string()
+                    };
+                    let sizediff = if m.size != p.size {
+                        format!(" (was {})", p.size)
+                    } else {
+                        "".to_string()
+                    };
+                    let rssdiff = if m.rss != p.rss {
+                        format!(" (was {})", p.rss)
+                    } else {
+                        "".to_string()
+                    };
+                    if !enddiff.is_empty() || !sizediff.is_empty() || !rssdiff.is_empty() {
+                        println!(
+                            "CHANGED: {:x}-{:x}{} size={}{} rss={}{} {}",
+                            m.start, m.end, enddiff, m.size, sizediff, m.rss, rssdiff, m.name
+                        );
+                    }
                 }
                 i += 1;
                 j += 1;
