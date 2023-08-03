@@ -325,7 +325,10 @@ impl Maps {
     }
 }
 
+let VERSION = "0.1";
+
 fn main() {
+    println!("mapwatcher Version {}", VERSION);
     let args: Vec<String> = env::args().collect();
     if args.len() != 3 {
         eprintln!("Usage: mapwatcher PID DELAY");
