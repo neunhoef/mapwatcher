@@ -1,3 +1,4 @@
+use num_format::{Locale, ToFormattedString};
 use std::env;
 use std::fs;
 use std::thread;
@@ -38,10 +39,10 @@ struct Map {
     pub start: u64,
     end: u64,
     pub flags: String,
-    pub hex: String,       // what is this?
+    pub offset: u64,       // what is this?
     pub device_major: u32, // correct guess?
     pub device_minor: u32, // correct guess?
-    pub number: String,    // what is this?
+    pub inode: u64,        // what is this?
     pub name: String,
     pub size: u64, // all in kB
     pub kernel_page_size: u64,
@@ -130,10 +131,10 @@ impl Map {
             start: get_hex(&bounds[0])?,
             end: get_hex(&bounds[1])?,
             flags: items[1].clone(),
-            hex: items[2].clone(),
+            offset: get_hex(&items[2])?,
             device_major: get_hex(&devices[0])? as u32,
             device_minor: get_hex(&devices[1])? as u32,
-            number: items[4].clone(),
+            inode: u64::from_str_radix(&items[4], 10).map_err(|e| e.to_string())?,
             name,
             size: get_number(&further_lines[0]),
             kernel_page_size: get_number(&further_lines[1]),
@@ -168,8 +169,8 @@ impl Map {
     pub fn pretty_print(&self) {
         println!("Range: {:x}-{:x}", self.start, self.end);
         println!(
-            "Flags: {}, hex: {}, device: {:x}:{:x}, number: {}",
-            self.flags, self.hex, self.device_major, self.device_minor, self.number
+            "Flags: {}, offset: {}, device: {:x}:{:x}, inode: {}",
+            self.flags, self.offset, self.device_major, self.device_minor, self.inode
         );
         println!("Name: {}", self.name);
         println!(
@@ -197,6 +198,10 @@ impl Map {
             "Thp eligible: {}, protection key: {}, vmflags: {}\n",
             self.thp_eligible, self.protection_key, self.vmflags
         );
+    }
+
+    pub fn is_readonly_mmapped_file(&self) -> bool {
+        !self.name.is_empty() && self.inode != 0 && !self.vmflags.contains("wr")
     }
 }
 
@@ -250,9 +255,25 @@ impl Maps {
         // We assume that both maps are sorted by start address!
         let mut i: usize = 0; // position in self.maps
         let mut j: usize = 0; // position in prev.maps
+        let mut total_size: u64 = 0;
+        let mut total_mmapped: u64 = 0;
+        let mut total_mmapped_rss: u64 = 0;
+        let mut total_size_prev: u64 = 0;
+        let mut total_mmapped_prev: u64 = 0;
+        let mut total_mmapped_rss_prev: u64 = 0;
         while i < self.maps.len() && j < prev.maps.len() {
             let m = &self.maps[i];
+            total_size += m.size;
+            if m.is_readonly_mmapped_file() {
+                total_mmapped += m.size;
+                total_mmapped_rss += m.rss;
+            }
             let p = &prev.maps[j];
+            total_size_prev += p.size;
+            if p.is_readonly_mmapped_file() {
+                total_mmapped_prev += p.size;
+                total_mmapped_rss_prev += p.rss;
+            }
             if m.start < p.start {
                 if !m.name.is_empty() {
                     println!(
@@ -301,6 +322,11 @@ impl Maps {
         if i < self.maps.len() {
             while i < self.maps.len() {
                 let m = &self.maps[i];
+                total_size += m.size;
+                if m.is_readonly_mmapped_file() {
+                    total_mmapped += m.size;
+                    total_mmapped_rss += m.rss;
+                }
                 if !m.name.is_empty() {
                     println!(
                         "MMAP: {:x}-{:x} size={} rss={} {}",
@@ -313,6 +339,11 @@ impl Maps {
         if j < self.maps.len() {
             while j < prev.maps.len() {
                 let m = &prev.maps[j];
+                total_size_prev += m.size;
+                if m.is_readonly_mmapped_file() {
+                    total_mmapped_prev += m.size;
+                    total_mmapped_rss_prev += m.rss;
+                }
                 if !m.name.is_empty() {
                     println!(
                         "DROP: {:x}-{:x} size={} rss={} {}",
@@ -322,6 +353,39 @@ impl Maps {
                 j += 1;
             }
         }
+        let size_diff = if total_size != total_size_prev {
+            format!(
+                " (was {})",
+                total_size_prev.to_formatted_string(&Locale::en)
+            )
+        } else {
+            "".to_string()
+        };
+        let mmapped_diff = if total_mmapped != total_mmapped_prev {
+            format!(
+                " (was {})",
+                total_mmapped_prev.to_formatted_string(&Locale::en)
+            )
+        } else {
+            "".to_string()
+        };
+        let mmapped_rss_diff = if total_mmapped_rss != total_mmapped_rss_prev {
+            format!(
+                " (was {})",
+                total_mmapped_rss_prev.to_formatted_string(&Locale::en)
+            )
+        } else {
+            "".to_string()
+        };
+        println!(
+            "Total size: {}{}, mmapped files: {}{}, mmapped rss: {}{}",
+            total_size.to_formatted_string(&Locale::en),
+            size_diff,
+            total_mmapped.to_formatted_string(&Locale::en),
+            mmapped_diff,
+            total_mmapped_rss.to_formatted_string(&Locale::en),
+            mmapped_rss_diff,
+        );
     }
 }
 
