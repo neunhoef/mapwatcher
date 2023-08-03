@@ -325,7 +325,7 @@ impl Maps {
     }
 }
 
-let VERSION = "0.1";
+const VERSION: &str = "0.1";
 
 fn main() {
     println!("mapwatcher Version {}", VERSION);
