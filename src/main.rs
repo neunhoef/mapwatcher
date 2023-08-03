@@ -389,7 +389,7 @@ impl Maps {
     }
 }
 
-const VERSION: &str = "0.1";
+const VERSION: &str = "0.2";
 
 fn main() {
     println!("mapwatcher Version {}", VERSION);
