@@ -1,4 +1,4 @@
-# mapwatcher - a tool to watch memory maps in Linux
+# mapwatcher - watch memory maps in Linux
 
 This is a tool which watches the memory maps (via /proc/<pid>/smaps
 of a running process on Linux.
