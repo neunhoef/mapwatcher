@@ -294,17 +294,17 @@ impl Maps {
                 if !m.name.is_empty() {
                     // Same map, see if there was a diff:
                     let enddiff = if m.end != p.end {
-                        format!(" (was {})", p.end)
+                        format!(" (was {})", p.end,)
                     } else {
                         "".to_string()
                     };
                     let sizediff = if m.size != p.size {
-                        format!(" (was {})", p.size)
+                        format!(" (was {} diff {})", p.size, m.size as i64 - p.size as i64)
                     } else {
                         "".to_string()
                     };
                     let rssdiff = if m.rss != p.rss {
-                        format!(" (was {})", p.rss)
+                        format!(" (was {} diff {})", p.rss, m.rss as i64 - p.rss as i64)
                     } else {
                         "".to_string()
                     };
@@ -355,24 +355,27 @@ impl Maps {
         }
         let size_diff = if total_size != total_size_prev {
             format!(
-                " (was {})",
-                total_size_prev.to_formatted_string(&Locale::en)
+                " (was {} diff {})",
+                total_size_prev.to_formatted_string(&Locale::en),
+                total_size as i64 - total_size_prev as i64
             )
         } else {
             "".to_string()
         };
         let mmapped_diff = if total_mmapped != total_mmapped_prev {
             format!(
-                " (was {})",
-                total_mmapped_prev.to_formatted_string(&Locale::en)
+                " (was {} diff {})",
+                total_mmapped_prev.to_formatted_string(&Locale::en),
+                total_mmapped as i64 - total_mmapped_prev as i64
             )
         } else {
             "".to_string()
         };
         let mmapped_rss_diff = if total_mmapped_rss != total_mmapped_rss_prev {
             format!(
-                " (was {})",
-                total_mmapped_rss_prev.to_formatted_string(&Locale::en)
+                " (was {} diff {})",
+                total_mmapped_rss_prev.to_formatted_string(&Locale::en),
+                total_mmapped_rss as i64 - total_mmapped_rss_prev as i64
             )
         } else {
             "".to_string()
@@ -389,7 +392,7 @@ impl Maps {
     }
 }
 
-const VERSION: &str = "0.2";
+const VERSION: &str = "0.3";
 
 fn main() {
     println!("mapwatcher Version {}", VERSION);
